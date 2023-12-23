@@ -1,14 +1,21 @@
-# Utiliza una imagen base que tenga Python instalado
-FROM python:3.9
+FROM nginx:alpine
+#Install java 8
+RUN apk -U add openjdk8 \
+    && rm -rf /var/cache/apk/*;
+RUN apk add ttf-dejavu
 
-# Establece el directorio de trabajo en la aplicación
-WORKDIR /app
-
-# Copia el código Python a la imagen
-COPY get_bitcoin_price.py /app/
-
-# Instala las dependencias (en este caso, solo requests)
-RUN pip install requests
-
-# Define el comando por defecto para ejecutar cuando se inicie el contenedor
-CMD ["python", "./get_bitcoin_price.py"]
+#Install java microservice
+ENV JAVA_OPTS=""
+ARG JAR_FILE
+ADD ${JAR_FILE} app.jar
+#Install app on nginx serve
+ # use a volume is mor efficient and speed that filesystem
+VOLUME /tmp
+RUN rm -rf /usr/share/nginx/html/*
+COPY nginx.conf /etc/nginx/nginx.conf
+COPY . /usr/share/nginx/html
+# COPY dist/billingApp /usr/share/nginx/html
+COPY appshell.sh appshell.sh
+#expose ports 8080 for java swagger app and 80 for nginx app
+EXPOSE 80 8080
+ENTRYPOINT ["sh", "/appshell.sh"]
